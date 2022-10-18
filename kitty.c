@@ -14,7 +14,7 @@
 // Includes de PuTTY
 #include "putty.h"
 #include "terminal.h"
-#include "ldisc.h"
+//#include "ldisc.h"
 #include "win_res.h"
 
 // Include specifiques Windows (windows.h doit imperativement etre declare en premier)
@@ -296,11 +296,6 @@ static int CtrlTabFlag = 1 ;
 int GetCtrlTabFlag(void) { return CtrlTabFlag  ; }
 void SetCtrlTabFlag( const int flag ) { CtrlTabFlag  = flag ; }
 
-// Flag pour repasser en mode Putty basic
-int PuttyFlag = 0 ;
-int GetPuttyFlag(void) { return PuttyFlag ; }
-void SetPuttyFlag( const int flag ) { PuttyFlag = flag ; }
-
 #ifdef MOD_RECONNECT
 // Flag pour inhiber le mécanisme de reconnexion automatique
 static int AutoreconnectFlag = 1 ;
@@ -492,7 +487,7 @@ void debug_log( const char *fmt, ... ) {
 	if( (InitialDirectory!=NULL) && (strlen(InitialDirectory)>0) )
 		sprintf(filename,"%s\\kitty.log",InitialDirectory);
 	else strcpy(filename,"kitty.log");
- 
+
 	va_start( ap, fmt ) ;
 	//vfprintf( stdout, fmt, ap ) ; // Ecriture a l'ecran
 	if( ( fp = fopen( filename, "ab" ) ) != NULL ) {
@@ -632,7 +627,7 @@ char *dupvprintf(const char *fmt, va_list ap) ;
 	
 // Procedure de recuperation de la valeur d'un flag
 int get_param( const char * val ) {
-	if( !stricmp( val, "PUTTY" ) ) return PuttyFlag ;
+	if( !stricmp( val, "PUTTY" ) ) return GetPuttyFlag() ;
 	else if( !stricmp( val, "INIFILE" ) ) return IniFileFlag ;
 	else if( !stricmp( val, "DIRECTORYBROWSE" ) ) return DirectoryBrowseFlag ;
 	else if( !stricmp( val, "HYPERLINK" ) ) return HyperlinkFlag ;
@@ -673,7 +668,7 @@ char * get_param_str( const char * val ) {
 #ifdef MOD_ZMODEM
 void xyz_updateMenuItems(Terminal *term) {
 	if( !GetZModemFlag() ) return ;
-	HMENU m = GetSystemMenu(hwnd, FALSE);
+	HMENU m = GetSystemMenu(MainHwnd, FALSE);
 //	EnableMenuItem(m, IDM_XYZSTART, term->xyz_transfering?MF_GRAYED:MF_ENABLED);
 	EnableMenuItem(m, IDM_XYZSTART, term->xyz_transfering?MF_GRAYED:MF_DISABLED);
 	EnableMenuItem(m, IDM_XYZUPLOAD, term->xyz_transfering?MF_GRAYED:MF_ENABLED);
@@ -683,28 +678,29 @@ void xyz_updateMenuItems(Terminal *term) {
 #endif
 
 char * kitty_current_dir() { 
-	static char cdir[1024]; 
+	
 
 return NULL ;  /* Ce code est tres specifique et ne marche pas partout */
-	
+	/*
+	static char cdir[1024]; 
 	char * dir = strstr(term->osc_string, ":") ; 
 	if(dir) { 
 		if( strlen(dir) > 1 ) {
 			dir = dir + 1 ;
-			if(*dir == '~') { 
+			if(*dir == '~') {
 				if(strlen(conf_get_str(conf,CONF_username))>0) { 
-				snprintf(cdir, 1024, "\"/home/%s/%s\"", conf_get_str(conf,CONF_username), dir + 1); 
-				return cdir; 
-				} 
-			} 
-			else if(*dir == '/') { 
+					snprintf(cdir, 1024, "\"/home/%s/%s\"", conf_get_str(conf,CONF_username), dir + 1); 
+					return cdir; 
+				}
+			} else if(*dir == '/') { 
 				snprintf(cdir, 1024, "\"%s\"", dir); 
 				return cdir; 
-				} 
 			} 
-		}
+		} 
+	}
 	return NULL; 
-	} 
+	*/
+} 
 
 // Liste des folder
 char **FolderList=NULL ;
@@ -1305,7 +1301,7 @@ void CreateDefaultIniFile_old( void ) {
 			writeINI( KittyIniFile, INIT_SECTION, "#antiidledelay", "60" ) ;
 			writeINI( KittyIniFile, INIT_SECTION, "#autostoresshkey", "no" ) ;
 #if (defined MOD_BACKGROUNDIMAGE) && (!defined FLJ)
-			writeINI( KittyIniFile, INIT_SECTION, "backgroundimage", "no" ) ;
+			writeINI( KittyIniFile, INIT_SECTION, "bgimage", "no" ) ;
 #endif
 			writeINI( KittyIniFile, INIT_SECTION, "#bcdelay", "0" ) ;
 			writeINI( KittyIniFile, INIT_SECTION, "capslock", "no" ) ;
@@ -1929,46 +1925,49 @@ void RunSessionWithCurrentSettings( HWND hwnd, Conf *conf, const char * host, co
 //SendMessage( hwnd, WM_SETICON, ICON_SMALL, (LPARAM)LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_MAINICON_0 + IconeNum ) ) );
 void SetNewIcon( HWND hwnd, char * iconefile, int icone, const int mode ) {
 	
-	HICON hIcon = NULL ;
-	if( (strlen(iconefile)>0) && existfile(iconefile) ) { 
-		hIcon = LoadImage(NULL, iconefile, IMAGE_ICON, 32, 32, LR_LOADFROMFILE|LR_SHARED) ; 
-		}
+	HICON hIcon = NULL, hIconBig = NULL ;
+	if( (strlen(iconefile)>0) && existfile(iconefile) ) {
+		hIcon = LoadImage(NULL, iconefile, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE|LR_SHARED) ; 
+		hIconBig = LoadImage(NULL, iconefile, IMAGE_ICON, 0, 0, LR_LOADFROMFILE|LR_SHARED|LR_DEFAULTSIZE) ; 
+	}
 
-	if(hIcon) {
-		SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon) ; 
+	if( hIcon || hIconBig ) {
+		if(!hIcon) hIcon = hIconBig ;
+		if(!hIconBig) hIconBig = hIcon ;
+		SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIconBig) ; 
 		SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon) ;
 		TrayIcone.hIcon = hIcon ;
 		//DeleteObject( hIcon ) ; 
-		}
-	else {
-	if( mode == SI_INIT ) {
-		if( icone!=0 ) IconeNum = icone - 1 ;
-		hIcon = LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_MAINICON_0 + IconeNum ) ) ;
-		SendMessage( hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon );
-		SendMessage( hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon );
-		TrayIcone.hIcon = hIcon ;
-		}
-	else {
-		if( IconeFlag==0 ) return ;
-		if( IconeFlag <= 0 ) { IconeNum = 0 ; } 
-		else {
-			if( mode == SI_RANDOM ) { 
-				SYSTEMTIME st ;
-				GetSystemTime( &st ) ;
-				IconeNum = ( GetCurrentProcessId() * time( NULL ) ) % NumberOfIcons ; 
-			} else { IconeNum++ ; if( IconeNum >= NumberOfIcons ) IconeNum = 0 ; }
+	} else {
+		if( mode == SI_INIT ) {
+			if( icone!=0 ) IconeNum = icone - 1 ;
+			hIcon = LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_MAINICON_0 + IconeNum ) ) ;
+			SendMessage( hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon );
+			SendMessage( hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon );
+			TrayIcone.hIcon = hIcon ;
+		} else {
+			if( IconeFlag==0 ) return ;
+			if( IconeFlag <= 0 ) { IconeNum = 0 ; 
+			} else {
+				if( mode == SI_RANDOM ) { 
+					SYSTEMTIME st ;
+					GetSystemTime( &st ) ;
+					IconeNum = ( GetCurrentProcessId() * time( NULL ) ) % NumberOfIcons ; 
+				} else { 
+					IconeNum++ ; if( IconeNum >= NumberOfIcons ) IconeNum = 0 ; 
+				}
 			}
-		hIcon = LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_MAINICON_0 + IconeNum ) ) ;
-		SendMessage( hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon );	
-		SendMessage( hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon );
-		TrayIcone.hIcon = hIcon ;
+			hIcon = LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_MAINICON_0 + IconeNum ) ) ;
+			SendMessage( hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon );	
+			SendMessage( hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon );
+			TrayIcone.hIcon = hIcon ;
 		}
 	}
 	Shell_NotifyIcon(NIM_MODIFY, &TrayIcone);
 }
 
 // Modification de l'icone pour mettre l'icone de perte de connexion
-void SetConnBreakIcon( void ) {
+void SetConnBreakIcon( HWND hwnd ) {
 #ifdef MOD_PERSO
 	HICON hIcon = NULL ;
 	hIcon = LoadIcon( hInstIcons, MAKEINTRESOURCE(IDI_NOCON) ) ;
@@ -3113,7 +3112,7 @@ static LRESULT CALLBACK InputMultilineCallBack (HWND hwnd, UINT message, WPARAM 
 
 char * InputBox( HINSTANCE hInstance, HWND hwnd ) {
 	if( InputBoxResult != NULL ) { free( InputBoxResult ) ; InputBoxResult = NULL ; }
-	DialogBox(hInstance, (LPCTSTR)114, hwnd, (DLGPROC)InputCallBack) ;
+	DialogBox(hInstance, (LPCTSTR)117, hwnd, (DLGPROC)InputCallBack) ;
 	return InputBoxResult ;
 	}
 
@@ -3135,13 +3134,13 @@ char * InputBoxMultiline( HINSTANCE hInstance, HWND hwnd ) {
 			}
 		}
 
-	DialogBox(hInstance, (LPCTSTR)115, NULL, (DLGPROC)InputMultilineCallBack) ;
+	DialogBox(hInstance, (LPCTSTR)118, NULL, (DLGPROC)InputMultilineCallBack) ;
 	return InputBoxResult ;
 	}
 	
 char * InputBoxPassword( HINSTANCE hInstance, HWND hwnd ) {
 	if( InputBoxResult != NULL ) { free( InputBoxResult ) ; InputBoxResult = NULL ; }
-	DialogBox(hInstance, (LPCTSTR)116, hwnd, (DLGPROC)InputCallBackPassword) ;
+	DialogBox(hInstance, (LPCTSTR)119, hwnd, (DLGPROC)InputCallBackPassword) ;
 	return InputBoxResult ;
 	}
 
@@ -3505,7 +3504,7 @@ int GetPortFwdState( const int port, const DWORD pid ) {
 }
 
 int ShowPortfwd( HWND hwnd, Conf * conf ) {
-	char pf[2048]="" ;
+	char pf[2100]="" ;
 	char *key, *val;
 	for (val = conf_get_str_strs(conf, CONF_portfwd, NULL, &key) ;
 		val != NULL;
@@ -3531,8 +3530,13 @@ int ShowPortfwd( HWND hwnd, Conf * conf ) {
 		} else {
 			p = dupprintf("%s\t%s\n", key, val) ;
 		}
-		strcat( pf, p ) ;
-		sfree(p);
+		if( (strlen(pf)+strlen(p))<2000 ) {
+			strcat( pf, p ) ;
+			sfree(p) ;
+		} else {
+			strcat( pf, "...\n" ) ;
+			break ;
+		}
 	}
 	/*
 	MIB_TCPTABLE_OWNER_PID *pTCPInfo;
@@ -3646,7 +3650,7 @@ int InternalCommand( HWND hwnd, char * st ) {
 		return 1 ;
 	} else if( !strcmp( st, "/urlregex" ) ) { 
 		char b[1024] ;
-		sprintf(b,"%d: %s",conf_get_int(term->conf,CONF_url_defregex),conf_get_str(conf,CONF_url_regex));
+		sprintf(b,"%d: %s",conf_get_int(conf,CONF_url_defregex),conf_get_str(conf,CONF_url_regex));
 		MessageBox( NULL, b, "URL regex", MB_OK ) ; return 1 ; 
 #endif
 	} else if( !strcmp( st, "/save" ) ) { 
@@ -3969,7 +3973,7 @@ void StartWinSCP( HWND hwnd, char * directory, char * host, char * user ) {
 	}
 	
 	if( conf_get_int(conf,CONF_protocol) == PROT_SSH ) {
-		sprintf( cmd, "%s %s://", shortpath, proto ) ;
+		sprintf( cmd, "\"%s\" %s://", shortpath, proto ) ;
 			
 		if( strlen( conf_get_str(conf, CONF_sftpconnect) ) > 0 ) {
 			strcat( cmd, conf_get_str(conf, CONF_sftpconnect) ) ;
@@ -4002,12 +4006,13 @@ void StartWinSCP( HWND hwnd, char * directory, char * host, char * user ) {
 		}
 		if( strlen( conf_get_filename(conf,CONF_keyfile)->path ) > 0 ) {
 			if( GetShortPathName( conf_get_filename(conf,CONF_keyfile)->path, shortpath, 4095 ) ) {
-				strcat( cmd, " /privatekey=" ) ;
+				strcat( cmd, " \"/privatekey=" ) ;
 				strcat( cmd, shortpath ) ;
+				strcat( cmd, "\"" ) ;
 			}
 		}
 	} else {
-		sprintf( cmd, "%s %s://%s", shortpath, proto, conf_get_str(conf,CONF_username) ) ;
+		sprintf( cmd, "\"%s\" %s://%s", shortpath, proto, conf_get_str(conf,CONF_username) ) ;
 		if( strlen( conf_get_str(conf,CONF_password) ) > 0 ) {
 			char bufpass[1024] ;
 			strcat( cmd, ":" ); 
@@ -4194,7 +4199,7 @@ void recupNomFichierDragDrop(HWND hwnd, HDROP* leDrop ) {
 			char buffer[1024]="", shortname[1024]="" ;
 			if( GetModuleFileName( NULL, (LPTSTR)buffer, 1023 ) ) 
 				if( GetShortPathName( buffer, shortname, 1023 ) ) {
-					sprintf( buffer, "%s -ed %s", shortname, fic ) ;
+					sprintf( buffer, "\"%s\" -ed %s", shortname, fic ) ;
 					RunCommand( hwnd, buffer ) ;
 				}
 		} else { 
@@ -4664,8 +4669,8 @@ void ResetWindow(int reinit) ;
 
 void NegativeColours(HWND hwnd) {
 	int i ;
-#ifdef MOD_TUTTY
-    for (i = 0; i < NCFGCOLOURS; i++) {
+#ifdef MOD_TUTTYCOLOR
+    for (i = 0; i < 34; i++) {
 #else
     for (i = 0; i < 22; i++) {
 #endif
@@ -4715,7 +4720,7 @@ void BlackOnWhiteColours(HWND hwnd) {
 }
 
 static int original_fontsize = -1 ;
-void ChangeFontSize(HWND hwnd, int dec) {
+void ChangeFontSize(Terminal *term, Conf *conf,HWND hwnd, int dec) {
 	FontSpec *fontspec = conf_get_fontspec(conf, CONF_font);
 	if( original_fontsize<0 ) original_fontsize = fontspec->height ;
 	if( dec == 0 ) { fontspec->height = original_fontsize ; }
@@ -5014,7 +5019,7 @@ void InitShortcuts( void ) {
 }
 
 int SwitchLogMode(void) ;
-int ManageShortcuts( HWND hwnd, const int* clips_system, int key_num, int shift_flag, int control_flag, int alt_flag, int altgr_flag, int win_flag ) {
+int ManageShortcuts( Terminal *term, Conf *conf, HWND hwnd, const int* clips_system, int key_num, int shift_flag, int control_flag, int alt_flag, int altgr_flag, int win_flag ) {
 	int key, i ;
 	key = key_num ;
 	if( alt_flag ) key = key + ALTKEY ;
@@ -5167,7 +5172,7 @@ int ManageShortcuts( HWND hwnd, const int* clips_system, int key_num, int shift_
 
 		if (key_num == VK_ADD) { SendMessage( hwnd, WM_COMMAND, IDM_FONTUP, 0 ) ; return 1 ; }
 		if (key_num == VK_SUBTRACT) { SendMessage( hwnd, WM_COMMAND, IDM_FONTDOWN, 0 ) ; return 1 ; }
-		if (key_num == VK_NUMPAD0) { ChangeFontSize(hwnd,0) ; return 1 ; }
+		if (key_num == VK_NUMPAD0) { ChangeFontSize(term,conf,hwnd,0) ; return 1 ; }
 #ifdef MOD_LAUNCHER
 		/*    ====> Ne fonctionne pas !!!
 		if (key_num == VK_LEFT ) //Fenetre KiTTY precedente
@@ -5182,7 +5187,7 @@ int ManageShortcuts( HWND hwnd, const int* clips_system, int key_num, int shift_
 
 // shift+bouton droit => paste ameliore pour serveur "lent"
 // Le paste utilise la methode "autocommand"
-void SetPasteCommand( void ) {
+void SetPasteCommand( HWND hwnd ) {
 	if( !PasteCommandFlag ) return ;
 	if( PasteCommand != NULL ) { free( PasteCommand ) ; PasteCommand = NULL ; }
 	char *pst = NULL ;
@@ -5225,8 +5230,8 @@ void LoadParameters( void ) {
 		{ AntiIdleCountMax = (int)floor(atoi(buffer)/10.0) ; if( AntiIdleCountMax<=0 ) AntiIdleCountMax =1 ; }
 	if( ReadParameter( INIT_SECTION, "autostoresshkey", buffer ) ) { if( !stricmp( buffer, "YES" ) ) SetAutoStoreSSHKeyFlag( 1 ) ; }
 #if (defined MOD_BACKGROUNDIMAGE) && (!defined FLJ)
-	if( debug_flag )
-	if( ReadParameter( INIT_SECTION, "backgroundimage", buffer ) ) {	
+	//if( debug_flag )
+	if( ReadParameter( INIT_SECTION, "bgimage", buffer ) ) {	
 		if( !stricmp( buffer, "NO" ) ) SetBackgroundImageFlag( 0 ) ; 
 		if( !stricmp( buffer, "YES" ) ) SetBackgroundImageFlag( 1 ) ;  // Broken en 0.71 ==> on desactive
 	}
@@ -5638,7 +5643,7 @@ void InitWinMain( void ) {
 	}
 
 	// Initialise la gestion des icones depuis la librairie kitty.dll si elle existe
-	if( !PuttyFlag ) {
+	if( !GetPuttyFlag() ) {
 		if( IconFile != NULL )
 		if( existfile( IconFile ) ) 
 			{ HMODULE hDll ; if( ( hDll = LoadLibrary( TEXT(IconFile) ) ) != NULL ) hInstIcons = hDll ; }
@@ -5703,7 +5708,7 @@ void InitWinMain( void ) ;
 int ManageLocalCmd( HWND hwnd, const char * cmd ) ;
 
 // Gestion des raccourcis
-int ManageShortcuts( HWND hwnd, const int* clips_system, int key_num, int shift_flag, int control_flag, int alt_flag, int altgr_flag, int win_flag ) ;
+int ManageShortcuts( Terminal *term, Conf *conf, HWND hwnd, const int* clips_system, int key_num, int shift_flag, int control_flag, int alt_flag, int altgr_flag, int win_flag ) ;
 
 // Nettoie la clé de PuTTY pour enlever les clés et valeurs spécifique à KiTTY
 // Se trouve dans le fichier kitty_registry.c

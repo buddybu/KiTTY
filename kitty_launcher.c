@@ -574,7 +574,7 @@ LRESULT CALLBACK Launcher_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		case WM_COMMAND: {//Commandes du menu
 			switch( LOWORD(wParam) ) {
 				case IDM_ABOUT:
-					MessageBox(hwnd,"     TTY Launcher\nSession launcher for TTY terminal emulator\n(c), 2009-2021","About", MB_OK ) ;
+					MessageBox(hwnd,"     TTY Launcher\nSession launcher for TTY terminal emulator\n(c), 2009-2022","About", MB_OK ) ;
 					break ;
 				case IDM_QUIT:
 					ResShell = Shell_NotifyIcon(NIM_DELETE, &TrayIcone) ;
@@ -682,7 +682,7 @@ int WINAPI Launcher_WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int s
 		}
 	}
 
-	if( strstr( cmdline, "-putty" ) != NULL ) PuttyFlag=1 ;
+	if( strstr( cmdline, "-putty" ) != NULL ) SetPuttyFlag(1) ;
 
 	wndclass.style = 0;
 	wndclass.lpfnWndProc = Launcher_WndProc;
@@ -704,7 +704,7 @@ int WINAPI Launcher_WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int s
 	}
 	if( LauncherConfReload ) InitLauncherRegistry() ;
 		
-	hwnd = CreateWindowEx(0, className, "KiTTYLauncher",
+	MainHwnd = CreateWindowEx(0, className, "KiTTYLauncher",
 				0,//WS_OVERLAPPEDWINDOW,
 				CW_USEDEFAULT, CW_USEDEFAULT,
 				CW_USEDEFAULT, CW_USEDEFAULT,
@@ -830,10 +830,10 @@ int RunSession( HWND hwnd, const char * folder_in, char * session_in ) {
 			if( session[strlen(session)-1] == '&' ) {
 				session[strlen(session)-1]='\0' ;
 				while( (session[strlen(session)-1]==' ')||(session[strlen(session)-1]=='\t') ) session[strlen(session)-1]='\0' ;
-				if( PuttyFlag )	sprintf( buffer, "%s -putty -load \"%s\" -send-to-tray", shortname, session ) ;
+				if( GetPuttyFlag() )	sprintf( buffer, "%s -putty -load \"%s\" -send-to-tray", shortname, session ) ;
 				else sprintf( buffer, "%s -load \"%s\" -send-to-tray", shortname, session ) ;
 			} else {
-				if( PuttyFlag )	sprintf( buffer, "%s -putty -load \"%s\"", shortname, session ) ;
+				if( GetPuttyFlag() )	sprintf( buffer, "%s -putty -load \"%s\"", shortname, session ) ;
 				else sprintf( buffer, "%s -load \"%s\"", shortname, session ) ;
 			}
 			RunCommand( hwnd, buffer ) ;
@@ -853,10 +853,10 @@ int RunSession( HWND hwnd, const char * folder_in, char * session_in ) {
 		if( session[strlen(session)-1] == '&' ) {
 			session[strlen(session)-1]='\0' ;
 			while( (session[strlen(session)-1]==' ')||(session[strlen(session)-1]=='\t') ) session[strlen(session)-1]='\0' ;
-			if( PuttyFlag )	sprintf( buffer, "%s -putty -load \"%s\" -send-to-tray", shortname, session ) ;
+			if( GetPuttyFlag() )	sprintf( buffer, "%s -putty -load \"%s\" -send-to-tray", shortname, session ) ;
 			else sprintf( buffer, "%s -load \"%s\" -send-to-tray", shortname, session ) ;
 		} else {
-			if( PuttyFlag )	sprintf( buffer, "%s -putty -load \"%s\"", shortname, session ) ;
+			if( GetPuttyFlag() )	sprintf( buffer, "%s -putty -load \"%s\"", shortname, session ) ;
 			else sprintf( buffer, "%s -load \"%s\"", shortname, session ) ;
 			//else sprintf( buffer, "%s @%s", shortname, session ) ;
 		}

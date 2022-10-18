@@ -6,7 +6,7 @@ https://www.9bis.com/kitty/
 </p>
 
 ## What is KiTTY ?
-KiTTY is a fork from version 0.71 of **PuTTY**, the best telnet / SSH client in the world.
+KiTTY is a fork from version 0.76 of **PuTTY**, the best telnet / SSH client in the world.
 KiTTY is only designed for the Microsoft(c) Windows(c) platform. For more information about the original software, or pre-compiled binaries on other systems, you can go to the [Simon Tatham PuTTY page](http://www.chiark.greenend.org.uk/~sgtatham/putty/ "PuTTY").
 
 KiTTY has all the features from the original software, and adds many others as described below:
@@ -41,7 +41,7 @@ KiTTY has all the features from the original software, and adds many others as d
 * pscp.exe and WinSCP integration
 * Binary compression
 * Clipboard printing
-* Cygwin and cmd.exe intégration
+* Cygwin and cmd.exe integration
 * File association
 * Other settings
 * New command-line options

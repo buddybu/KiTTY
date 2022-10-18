@@ -37,6 +37,11 @@ int DirectoryBrowseFlag = 1 ;
 int DirectoryBrowseFlag = 0 ;
 #endif
 
+// Flag pour repasser en mode Putty basic
+int PuttyFlag = 0 ;
+int GetPuttyFlag(void) { return PuttyFlag ; }
+void SetPuttyFlag( const int flag ) { PuttyFlag = flag ; }
+
 // Flag permettant de sauvegarder automatique les cles SSH des serveurs
 static int AutoStoreSSHKeyFlag = 0 ;
 int GetAutoStoreSSHKeyFlag(void) { return AutoStoreSSHKeyFlag ; }
@@ -382,6 +387,7 @@ void unmungestr( const char *in, char *out, int outlen ) {
 }
 
 // Fonctions de gestion du mot de passe
+extern Conf *conf;
 void GetPasswordInConfig( char * p ) {
 	if( strlen(conf_get_str(conf,CONF_password)) == 0 ) return ;
 	/* On decrypte le password */

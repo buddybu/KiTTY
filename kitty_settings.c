@@ -82,7 +82,7 @@ void save_open_settings_forced(char *filename, Conf *conf) {
         const struct BackendVtable *vt =
             backend_vt_from_proto(conf_get_int(conf, CONF_protocol));
         if (vt)
-            p = vt->name;
+            p = vt->id;
     }
     write_setting_s_forced(sesskey, "Protocol", p);
     write_setting_i_forced(sesskey, "PortNumber", conf_get_int(conf, CONF_port));
@@ -134,6 +134,7 @@ void save_open_settings_forced(char *filename, Conf *conf) {
 #endif
     write_setting_s_forced(sesskey, "RekeyBytes", conf_get_str(conf, CONF_ssh_rekey_data));
     write_setting_b_forced(sesskey, "SshNoAuth", conf_get_bool(conf, CONF_ssh_no_userauth));
+    write_setting_b_forced(sesskey, "SshNoTrivialAuth", conf_get_bool(conf, CONF_ssh_no_trivial_userauth));
     write_setting_b_forced(sesskey, "SshBanner", conf_get_bool(conf, CONF_ssh_show_banner));
     write_setting_b_forced(sesskey, "AuthTIS", conf_get_bool(conf, CONF_try_tis_auth));
     write_setting_b_forced(sesskey, "AuthKI", conf_get_bool(conf, CONF_try_ki_auth));
@@ -231,10 +232,12 @@ void save_open_settings_forced(char *filename, Conf *conf) {
     write_setting_i_forced(sesskey, "WindowMaximizable", conf_get_int(conf, CONF_window_maximizable) );
     write_setting_i_forced(sesskey, "WindowHasSysMenu", conf_get_int(conf, CONF_window_has_sysmenu) );
     write_setting_i_forced(sesskey, "DisableBottomButtons", conf_get_int(conf, CONF_bottom_buttons) );
+#endif
+#ifdef MOD_TUTTYCOLOR
     write_setting_i_forced(sesskey, "BoldAsColourTest", conf_get_int(conf, CONF_bold_colour) );
     write_setting_i_forced(sesskey, "UnderlinedAsColour", conf_get_int(conf, CONF_under_colour) );
     write_setting_i_forced(sesskey, "SelectedAsColour", conf_get_int(conf, CONF_sel_colour) );
-    for (i = 0; i < NCFGCOLOURS; i++) {
+    for (i = 0; i < 34; i++) {
 #else
     for (i = 0; i < 22; i++) {
 #endif
@@ -327,6 +330,15 @@ void save_open_settings_forced(char *filename, Conf *conf) {
     write_setting_b_forced(sesskey, "ConnectionSharingUpstream", conf_get_bool(conf, CONF_ssh_connection_sharing_upstream));
     write_setting_b_forced(sesskey, "ConnectionSharingDownstream", conf_get_bool(conf, CONF_ssh_connection_sharing_downstream));
     wmap_forced(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys, false);
+    
+    /*
+     * PuTTY 0.75 SUPDUP settings
+
+    write_setting_s_forced(sesskey, "SUPDUPLocation", conf_get_str(conf, CONF_supdup_location));
+    write_setting_i_forced(sesskey, "SUPDUPCharset", conf_get_int(conf, CONF_supdup_ascii_set));
+    write_setting_b_forced(sesskey, "SUPDUPMoreProcessing", conf_get_bool(conf, CONF_supdup_more));
+    write_setting_b_forced(sesskey, "SUPDUPScrolling", conf_get_bool(conf, CONF_supdup_scroll));
+     */
 #ifdef MOD_PROXY
     write_setting_s_forced(sesskey, "ProxySelection", conf_get_str(conf, CONF_proxyselection));
 #endif
@@ -680,6 +692,7 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     gpps_forced(sesskey, "LogHost", "", conf, CONF_loghost);
     gppb_forced(sesskey, "SSH2DES", false, conf, CONF_ssh2_des_cbc);
     gppb_forced(sesskey, "SshNoAuth", false, conf, CONF_ssh_no_userauth);
+    gppb_forced(sesskey, "SshNoTrivialAuth", false, conf, CONF_ssh_no_trivial_userauth);
     gppb_forced(sesskey, "SshBanner", true, conf, CONF_ssh_show_banner);
     gppb_forced(sesskey, "AuthTIS", false, conf, CONF_try_tis_auth);
     gppb_forced(sesskey, "AuthKI", true, conf, CONF_try_ki_auth);
@@ -746,8 +759,13 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     gppb_forced(sesskey, "HideMousePtr", false, conf, CONF_hide_mouseptr);
     gppb_forced(sesskey, "SunkenEdge", false, conf, CONF_sunken_edge);
     gppi_forced(sesskey, "WindowBorder", 1, conf, CONF_window_border);
+#ifdef MOD_FAR2L
+    gppi_forced(sesskey, "CurType", 1, conf, CONF_cursor_type);
+    gppb_forced(sesskey, "BlinkCur", true, conf, CONF_blink_cur);
+#else
     gppi_forced(sesskey, "CurType", 0, conf, CONF_cursor_type);
     gppb_forced(sesskey, "BlinkCur", false, conf, CONF_blink_cur);
+#endif
     /* pedantic compiler tells me I can't use conf, CONF_beep as an int * :-) */
     gppi_forced(sesskey, "Beep", 1, conf, CONF_beep);
     gppi_forced(sesskey, "BeepInd", 0, conf, CONF_beep_ind);
@@ -817,11 +835,13 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     gppi_forced(sesskey, "WindowMaximizable", 1, conf, CONF_window_maximizable);
     gppi_forced(sesskey, "WindowHasSysMenu", 1, conf, CONF_window_has_sysmenu);
     gppi_forced(sesskey, "DisableBottomButtons", 1, conf, CONF_bottom_buttons);
+#endif
+#ifdef MOD_TUTTY
     gppi_forced(sesskey, "BoldAsColourTest", 1, conf, CONF_bold_colour);
     gppi_forced(sesskey, "UnderlinedAsColour", 0, conf, CONF_under_colour);
     gppi_forced(sesskey, "SelectedAsColour", 0, conf, CONF_sel_colour);
-    for (i = 0; i < NCFGCOLOURS; i++) {
-	static const char *const defaults[NCFGCOLOURS] = {
+    for (i = 0; i < 34; i++) {
+	static const char *const defaults[34] = {
 	    "187,187,187", "255,255,255", "0,0,0", "85,85,85", "0,0,0",
 	    "0,255,0", "0,0,0", "85,85,85", "187,0,0", "255,85,85",
 	    "0,187,0", "85,255,85", "187,187,0", "255,255,85", "0,0,187",
@@ -966,6 +986,15 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     gppb_forced(sesskey, "ConnectionSharingDownstream", true,
          conf, CONF_ssh_connection_sharing_downstream);
     gppmap_forced(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys);
+    
+    /*
+     * PuTTY 0.75 SUPDUP settings
+    gpps_forced(sesskey, "SUPDUPLocation", "The Internet", conf, CONF_supdup_location);
+    gppi_forced(sesskey, "SUPDUPCharset", false, conf, CONF_supdup_ascii_set);
+    gppb_forced(sesskey, "SUPDUPMoreProcessing", false, conf, CONF_supdup_more);
+    gppb_forced(sesskey, "SUPDUPScrolling", false, conf, CONF_supdup_scroll);
+     */
+
 /* rutty: */
 #ifdef MOD_RUTTY
 	gppfile_forced(sesskey, "ScriptFileName", conf, CONF_script_filename);
@@ -1269,14 +1298,13 @@ static void write_clip_setting_forced(void *sesskey, const char *savekey, Conf *
       case CLIPUI_EXPLICIT:
         write_setting_s(sesskey, savekey, "explicit");
         break;
-      case CLIPUI_CUSTOM:
-        {
+      case CLIPUI_CUSTOM: {
             char *sval = dupcat("custom:", conf_get_str(conf, strconfkey),
                                 (const char *)NULL);
             write_setting_s_forced(sesskey, savekey, sval);
             sfree(sval);
-        }
         break;
+      }
     }
 }
 

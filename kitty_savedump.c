@@ -268,11 +268,12 @@ void SaveDumpListConf( FILE *fp, const char *directory ) {
 		}
 	}
 
+Terminal* GetTerminal() ;
 void kitty_term_copyall(Terminal *term) ;
 void SaveDumpClipBoard( FILE *fp ) {
 	char *pst = NULL ;
-	if( term==NULL ) return ;
-	kitty_term_copyall(term) ;
+	if( GetTerminal()==NULL ) return ;
+	kitty_term_copyall(GetTerminal()) ;
 	if( OpenClipboard(NULL) ) {
 		HGLOBAL hglb ;
 		if( (hglb = GetClipboardData( CF_TEXT ) ) != NULL ) {
@@ -344,6 +345,7 @@ void SaveDumpConfig( FILE *fp, Conf * conf ) {
   	fprintf( fp, "sshprot=%d\n",			conf_get_int(conf,CONF_sshprot) ) ;
 	fprintf( fp, "ssh2_des_cbc=%d\n",		conf_get_bool(conf,CONF_ssh2_des_cbc) ) ;
 	fprintf( fp, "ssh_no_userauth=%d\n",		conf_get_bool(conf,CONF_ssh_no_userauth) ) ;
+	fprintf( fp, "ssh_no_trivial_userauth=%d\n",	conf_get_bool(conf,CONF_ssh_no_trivial_userauth) ) ;
 	fprintf( fp, "ssh_show_banner=%d\n",		conf_get_bool(conf,CONF_ssh_show_banner) ) ;
 	fprintf( fp, "try_tis_auth=%d\n",		conf_get_bool(conf,CONF_try_tis_auth) ) ;
 	fprintf( fp, "try_ki_auth=%d\n",		conf_get_bool(conf,CONF_try_ki_auth) ) ;
@@ -533,6 +535,13 @@ void SaveDumpConfig( FILE *fp, Conf * conf ) {
 	fprintf( fp, "shadowboldoffset=%d\n",		conf_get_int(conf,CONF_shadowboldoffset) ) ;
 	fprintf( fp, "crhaslf=%d\n",			conf_get_bool(conf,CONF_crhaslf) ) ;
 	fprintf( fp, "winclass=%s\n",			conf_get_str(conf,CONF_winclass) ) ;
+	
+	/* PuTTY 0.75 
+	fprintf( fp, "supdup_location=%s\n",		conf_get_str(conf,CONF_supdup_location) ) ;
+	fprintf( fp, "supdup_ascii_set=%d\n",		conf_get_int(conf,CONF_supdup_ascii_set) ) ;
+	fprintf( fp, "supdup_more=%d\n",		conf_get_bool(conf,CONF_supdup_more) ) ;
+	fprintf( fp, "supdup_scroll=%d\n",		conf_get_bool(conf,CONF_supdup_scroll) ) ;
+*/
 
 #ifdef MOD_PERSO
 	/* MOD_PERSO Options */
@@ -644,6 +653,8 @@ void SaveDumpConfig( FILE *fp, Conf * conf ) {
 	fprintf( fp, "window_maximizable=%d\n",		conf_get_int(conf,CONF_window_maximizable) ) ; 
 	fprintf( fp, "window_has_sysmenu=%d\n",		conf_get_int(conf,CONF_window_has_sysmenu) ) ; 
 	fprintf( fp, "bottom_buttons=%d\n",		conf_get_int(conf,CONF_bottom_buttons) ) ; 
+#endif
+#ifdef MOD_TUTTYCOLOR
 	fprintf( fp, "bold_colour=%d\n",		conf_get_int(conf,CONF_bold_colour) ) ; 
 	fprintf( fp, "under_colour=%d\n",		conf_get_int(conf,CONF_under_colour) ) ; 
 	fprintf( fp, "sel_colour=%d\n",			conf_get_int(conf,CONF_sel_colour) ) ;
@@ -691,7 +702,7 @@ void SaveDumpConfig( FILE *fp, Conf * conf ) {
 	fprintf( fp, "AutoStoreSSHKeyFlag=%d\nDirectoryBrowseFlag=%d\nVisibleFlag=%d\nShortcutsFlag=%d\nMouseShortcutsFlag=%d\nIconeFlag=%d\nNumberOfIcons=%d\nSizeFlag=%d\nCapsLockFlag=%d\nTitleBarFlag=%d\nCtrlTabFlag=%d\nRuTTYFlag=%d\n"
 	,GetAutoStoreSSHKeyFlag(),DirectoryBrowseFlag,VisibleFlag,ShortcutsFlag,MouseShortcutsFlag,IconeFlag,NumberOfIcons,SizeFlag,CapsLockFlag,TitleBarFlag,CtrlTabFlag,RuttyFlag);
 	//static HINSTANCE hInstIcons =  NULL ;
-	fprintf( fp, "WinHeight=%d\nWinrolFlag=%d\nAutoSendToTray=%d\nNoKittyFileFlag=%d\nConfigBoxHeight=%d\nConfigBoxWindowHeight=%d\nConfigBoxNoExitFlag=%d\nUserPassSSHNoSave=%d\nPuttyFlag=%d\n",WinHeight,WinrolFlag,AutoSendToTray,NoKittyFileFlag,ConfigBoxHeight,ConfigBoxWindowHeight,ConfigBoxNoExitFlag,GetUserPassSSHNoSave(),PuttyFlag);
+	fprintf( fp, "WinHeight=%d\nWinrolFlag=%d\nAutoSendToTray=%d\nNoKittyFileFlag=%d\nConfigBoxHeight=%d\nConfigBoxWindowHeight=%d\nConfigBoxNoExitFlag=%d\nUserPassSSHNoSave=%d\nPuttyFlag=%d\n",WinHeight,WinrolFlag,AutoSendToTray,NoKittyFileFlag,ConfigBoxHeight,ConfigBoxWindowHeight,ConfigBoxNoExitFlag,GetUserPassSSHNoSave(),GetPuttyFlag());
 
 	fprintf( fp,"BackgroundImageFlag=%d\n",GetBackgroundImageFlag() );
 	fprintf( fp,"RandomActiveFlag=%d\n",GetRandomActiveFlag() );
@@ -959,7 +970,7 @@ void SaveDumpFile( char * filename ) {
 
 		sprintf( buffer, "%s\\%s", InitialDirectory, filename ) ;
 		sprintf( buffer2, "%s\\%s", InitialDirectory, "kitty.dmp.bcr" ) ;
-		bcrypt_file_base64( buffer, buffer2, "9bis", 80 ) ; unlink( buffer ) ; rename( buffer2, buffer ) ;
+		bcrypt_file_base64( buffer, buffer2, MASTER_PASSWORD, 80 ) ; unlink( buffer ) ; rename( buffer2, buffer ) ;
 		}
 	}
 void SaveDump(void) {
